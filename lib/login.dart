@@ -1,24 +1,77 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/components/form/input.dart';
 
 class LoginScreen extends StatefulWidget {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+
+  LoginScreen() {
+    FirebaseAuth.instance.authStateChanges().listen((User user) {
+      if (user == null) {
+        print('User is currently signed out!');
+      } else {
+        print('User is signed in!');
+      }
+    });
+  }
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
+class _LoginData {
+  String email = '';
+  String password = '';
+  void setEmail(String value) {
+    this.email = value;
+  }
+
+  void setPassword(String value) {
+    this.password = value;
+  }
+}
+
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  _LoginData _data = new _LoginData();
+
+  void submit () async {
+    if (_formKey.currentState.validate()) {
+      _formKey.currentState.save();
+      // try {
+      //   UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      //       email: "barry.allen@example.com",
+      //       password: "SuperSecretPassword!"
+      //   );
+      // } on FirebaseAuthException catch (e) {
+      //   if (e.code == 'user-not-found') {
+      //     print('No user found for that email.');
+      //   } else if (e.code == 'wrong-password') {
+      //     print('Wrong password provided for that user.');
+      //   }
+      // }
+      try {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: "barry.allen@example.com",
+            password: "SuperSecretPassword!"
+        );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'weak-password') {
+          print('The password provided is too weak.');
+        } else if (e.code == 'email-already-in-use') {
+          print('The account already exists for that email.');
+        }
+      } catch (e) {
+        print(e);
+      }
+    }
+  }
 
   Widget buildLoginButton() {
     return Container(
         padding: EdgeInsets.symmetric(vertical: 25.0),
         width: double.infinity,
         child: RaisedButton(
-          onPressed: () {
-            if (_formKey.currentState.validate()) {
-              print('Validated');
-            }
-          },
+            onPressed: submit,
             elevation: 5.0,
             padding: EdgeInsets.all(15.0),
             shape: RoundedRectangleBorder(
@@ -78,16 +131,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Input(
-                              label: 'Email',
-                              hintText: 'Enter your email',
-                              icon: Icon(Icons.email, color: Colors.white)),
+                            label: 'Email',
+                            hintText: 'Enter your email',
+                            icon: Icon(Icons.email, color: Colors.white),
+                            onSaveFunc: this._data.setEmail,
+                          ),
                           SizedBox(height: 20.0),
                           Input(
-                            label: 'Password',
-                            hintText: 'Enter your password',
-                            icon: Icon(Icons.lock, color: Colors.white),
-                            obscureText: true,
-                          ),
+                              label: 'Password',
+                              hintText: 'Enter your password',
+                              icon: Icon(Icons.lock, color: Colors.white),
+                              obscureText: true,
+                              onSaveFunc: this._data.setPassword),
                           buildLoginButton()
                         ])),
               ],
