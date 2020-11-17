@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -57,12 +59,27 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   Future<FirebaseApp> _initialization;
   User _user;
+  StreamSubscription<User> stream;
 
   _MyHomePageState() {
     _initialization = Firebase.initializeApp().then((FirebaseApp firebaseApp) {
       _user = FirebaseAuth.instance.currentUser;
+      stream = FirebaseAuth.instance.authStateChanges().listen((event) {
+        setState(() {
+          _user = event;
+        });
+      });
       return firebaseApp;
     });
+
+  }
+
+  @override
+  void dispose() {
+    if (stream != null) {
+      stream.cancel();
+    }
+    super.dispose();
   }
 
   Widget loading() {
