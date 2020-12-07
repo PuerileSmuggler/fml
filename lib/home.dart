@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/components/form/input.dart';
+import 'package:flutter_app/components/profilePicture.dart';
+import 'package:flutter_app/firestore/user.dart';
 
 import 'main.dart';
 
@@ -29,6 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
     }
+  }
+
+  void createUser() async {
+    User user = FirebaseAuth.instance.currentUser; // TODO: Check if user exists
+// (await FirestoreUserController.getUser(user.uid)).docs.forEach((element) {print(element.data().entries.);});
   }
 
   Function logout(BuildContext context) {
@@ -127,32 +135,73 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Logged in'),
-        ),
-        drawer: Drawer(
-            child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
+      appBar: AppBar(
+        title: Text('Your fammily'),
+      ),
+      drawer: Drawer(
+          child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+            ),
+            child: Text(
+              'Fammily',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
               ),
-              child: Text(
-                'Fammily',
-                style: TextStyle(
+            ),
+          ),
+          ListTile(
+            onTap: logout(context),
+            leading: Icon(Icons.logout),
+            title: Text('Logout'),
+          ),
+        ],
+      )),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Profile',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+              Divider(thickness: 2),
+              Row(
+                children: [
+                  SizedBox(width: 120, child: ProfilePicture(uid: 'test', width: 60.0,)),
+
+                  Text('Henlo'),
+                  Text('Henlo'),
+                ],
+              ),
+              RaisedButton(
+                  onPressed: createUser,
+                  elevation: 5.0,
+                  padding: EdgeInsets.all(15.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.0)),
                   color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-            ),
-            ListTile(
-              onTap: logout(context),
-              leading: Icon(Icons.logout),
-              title: Text('Logout'),
-            ),
-          ],
-        )),
-        body: _buildLoginForm());
+                  child: Text(
+                    'Create user collection',
+                    style: TextStyle(
+                        color: Color(0xFF30afe3),
+                        letterSpacing: 1.5,
+                        fontSize: 18.0,
+                        fontFamily: 'OpenSans'),
+                  )),
+              Text('Your fammily',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+              Divider(thickness: 2)
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

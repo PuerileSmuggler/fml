@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/components/form/input.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_app/firestore/user.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -19,20 +21,41 @@ class _LoginData {
   }
 }
 
+class _RegisterData {
+  String name = '';
+  String email = '';
+  String password = '';
+  String lastName = '';
+  void setEmail(String value) {
+    this.email = value;
+  }
+
+  void setPassword(String value) {
+    this.password = value;
+  }
+
+  void setName(String value) {
+    this.name = value;
+  }
+
+  void setLastName(String value) {
+    this.lastName = value;
+  }
+}
+
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _registerFormKey = GlobalKey<FormState>();
   _LoginData _data = new _LoginData();
-  _LoginData _registerData = new _LoginData();
+  _RegisterData _registerData = new _RegisterData();
 
   void submit() async {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: _data.email,
-            password: _data.password
-        );
+        User user = (await FirebaseAuth.instance.signInWithEmailAndPassword(
+                email: _data.email, password: _data.password))
+            .user;
       } on FirebaseAuthException catch (e) {
         if (e.code == 'user-not-found') {
           print('No user found for that email.');
@@ -47,8 +70,11 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_registerFormKey.currentState.validate()) {
       _registerFormKey.currentState.save();
       try {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: _registerData.email, password: _registerData.password);
+        User user = (await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                email: _registerData.email, password: _registerData.password))
+            .user;
+        FirestoreUserController.addUser(
+            user.uid, _registerData.name, _registerData.lastName);
       } on FirebaseAuthException catch (e) {
         if (e.code == 'weak-password') {
           print('The password provided is too weak.');
@@ -168,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
           height: double.infinity,
           child: SingleChildScrollView(
             physics: AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 120.0),
+            padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 40.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -198,6 +224,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               icon: Icon(Icons.lock, color: Colors.white),
                               obscureText: true,
                               onSaveFunc: this._registerData.setPassword),
+                          SizedBox(height: 20.0),
+                          Input(
+                              label: 'Name',
+                              hintText: 'Enter your name',
+                              icon: Icon(Icons.person, color: Colors.white),
+                              onSaveFunc: this._registerData.setName),
+                          SizedBox(height: 20.0),
+                          Input(
+                              label: 'Last name',
+                              hintText: 'Enter your last name',
+                              icon: Icon(Icons.person, color: Colors.white),
+                              onSaveFunc: this._registerData.setLastName),
                           _buildLoginButton('REGISTER', register)
                         ])),
               ],
