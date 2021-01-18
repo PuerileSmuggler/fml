@@ -2,12 +2,18 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class ProfilePicture extends StatelessWidget {
+class ProfilePicture extends StatefulWidget {
   final String uid;
-  String url;
-  double width;
+  final double width;
   
   ProfilePicture({this.uid, this.width});
+
+  @override
+  _ProfilePictureState createState() => _ProfilePictureState();
+}
+
+class _ProfilePictureState extends State<ProfilePicture> {
+  String url;
 
   Future<void> getURL() async {
     url = await FirebaseStorage.instance.ref().child('images').child('31iokp.jpg').getDownloadURL();
@@ -27,7 +33,7 @@ class ProfilePicture extends StatelessWidget {
         // Once complete, show your application
         if (snapshot.connectionState == ConnectionState.done) {
           if (url != null) {
-            return CircleAvatar(backgroundImage: NetworkImage(url), radius: width);
+            return CircleAvatar(backgroundImage: NetworkImage(url), radius: widget.width);
           }
         }
 

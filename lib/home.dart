@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/components/form/input.dart';
 import 'package:flutter_app/components/profilePicture.dart';
+import 'package:flutter_app/firestore/family.dart';
 import 'package:flutter_app/firestore/user.dart';
+import 'package:flutter_app/utils/FamilyCodeGenerator.dart';
 
 import 'main.dart';
 
@@ -27,6 +29,13 @@ class _LoginData {
 class _HomeScreenState extends State<HomeScreen> {
   final _formKey = GlobalKey<FormState>();
   _LoginData _data = new _LoginData();
+  Future<Map<String, dynamic>> _userData;
+
+  _HomeScreenState() {
+    FamilyCodeGenerator.generateCode();
+    _userData = FirestoreUserController.getUserDataById(
+        FirebaseAuth.instance.currentUser.uid);
+  }
 
   void submit() async {
     if (_formKey.currentState.validate()) {
@@ -35,8 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void createUser() async {
-    User user = FirebaseAuth.instance.currentUser; // TODO: Check if user exists
-// (await FirestoreUserController.getUser(user.uid)).docs.forEach((element) {print(element.data().entries.);});
+    User user = FirebaseAuth.instance.currentUser;
+    String code = await FamilyCodeGenerator.generateCode();
+    FirestoreFamilyController.joinFamily(user.uid, code);
   }
 
   Function logout(BuildContext context) {
@@ -132,76 +142,124 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
+  Widget loading() {
+    return Scaffold(
+      body: Center(
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+            ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Your fammily'),
-      ),
-      drawer: Drawer(
-          child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
-            child: Text(
-              'Fammily',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-              ),
-            ),
-          ),
-          ListTile(
-            onTap: logout(context),
-            leading: Icon(Icons.logout),
-            title: Text('Logout'),
-          ),
-        ],
-      )),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Profile',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-              Divider(thickness: 2),
-              Row(
-                children: [
-                  SizedBox(width: 120, child: ProfilePicture(uid: 'test', width: 60.0,)),
+    return FutureBuilder(
+      // Initialize FlutterFire:
+      future: _userData,
+      builder: (context, snapshot) {
+        // Check for errors
+        if (snapshot.hasError) {
+          // return SomethingWentWrong();
+        }
 
-                  Text('Henlo'),
-                  Text('Henlo'),
-                ],
-              ),
-              RaisedButton(
-                  onPressed: createUser,
-                  elevation: 5.0,
-                  padding: EdgeInsets.all(15.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0)),
-                  color: Colors.white,
+        // Once complete, show your application
+        if (snapshot.hasData) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('Your fammily'),
+            ),
+            drawer: Drawer(
+                child: ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                  ),
                   child: Text(
-                    'Create user collection',
+                    'Fammily',
                     style: TextStyle(
-                        color: Color(0xFF30afe3),
-                        letterSpacing: 1.5,
-                        fontSize: 18.0,
-                        fontFamily: 'OpenSans'),
-                  )),
-              Text('Your fammily',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-              Divider(thickness: 2)
-            ],
-          ),
-        ),
-      ),
+                      color: Colors.white,
+                      fontSize: 24,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  onTap: logout(context),
+                  leading: Icon(Icons.logout),
+                  title: Text('Logout'),
+                ),
+              ],
+            )),
+            body: Container(
+              width: double.infinity,
+              height: double.infinity,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(
+                            width: 60,
+                            child: ProfilePicture(
+                              uid: 'test',
+                              width: 30.0,
+                            )),
+                        SizedBox(width: 20),
+                        Column(
+                          children: [
+                            Text(
+                              snapshot.data['name'] +
+                                  ' ' +
+                                  snapshot.data['lastName'],
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w400, fontSize: 20.0),
+                            ),
+                            SizedBox(height: 6.0),
+                            Text(
+                              'Head of the family',
+                              textAlign: TextAlign.left,
+                            )
+                          ],
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                        )
+                      ],
+                    ),
+                    RaisedButton(
+                        onPressed: createUser,
+                        elevation: 5.0,
+                        padding: EdgeInsets.all(15.0),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30.0)),
+                        color: Colors.white,
+                        child: Text(
+                          'Create user collection',
+                          style: TextStyle(
+                              color: Color(0xFF30afe3),
+                              letterSpacing: 1.5,
+                              fontSize: 18.0,
+                              fontFamily: 'OpenSans'),
+                        )),
+                    Text('Your fammily',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w500)),
+                    Divider(thickness: 2)
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Otherwise, show something whilst waiting for initialization to complete
+        return loading();
+      },
     );
   }
 }
